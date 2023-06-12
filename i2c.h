@@ -7,9 +7,9 @@
 
 void I2C0_init(void);
 
-void I2C0_busy(void);
-
 void I2C0_wait(void);
+
+void I2C0_busy(void);
 
 void I2C0_start(void);
 
@@ -21,4 +21,4 @@ uint8_t I2C0_read_byte(uint8_t dev, uint8_t address);
 
 void I2C0_write_byte(uint8_t dev, uint8_t address, uint8_t data);
 
-#endif /* I2C_H_ */
+#endif

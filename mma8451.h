@@ -1,5 +1,4 @@
 
-
 #ifndef MMA8451_H_
 #define MMA8451_H_
 
@@ -33,4 +32,4 @@ void read_xyz(void);
 
 void calibrate(int16_t *xval, int16_t *yval, int16_t *zval, int *xavg, int *yavg, int *zavg);
 
-#endif /* MMA8451_H_ */
+#endif 

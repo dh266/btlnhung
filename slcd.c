@@ -1,271 +1,237 @@
 
-#include "slcd.h"
 #include "MKL46Z4.h"
+#include "slcd.h"
 
-/* LCD front plane pin numbers for each LCD digits on FRDM-KL46 board */
-static uint8_t lcd_fp_pins[4][2] = { { 37, 17 }, /* Digit 1 pins in order (first pin drives D,E,F,G and second pin DP,A,B,C segments) */
-										{ 7, 8 }, /* Digit 2 pins in order*/
-										{ 53, 38 }, /* DIgit 3 pins in order */
-										{ 10, 11 } /* DIgit 3 pins in order */
+const unsigned char WF_ORDERING_TABLE[] =
+    {
+        CHAR1a,   // Pin:5
+        CHAR1b,   // Pin:6
+        CHAR2a,   // Pin:7
+        CHAR2b,   // Pin:8
+        CHAR3a,   // Pin:9
+        CHAR3b,   // Pin:10
+        CHAR4a,   // Pin:11
+        CHAR4b,   // Pin:12
+        CHARCOM0, // Pin:1
+        CHARCOM1, // Pin:2
+        CHARCOM2, // Pin:3
+        CHARCOM3, // Pin:4
+
+};
+		
+const unsigned long int MASK_BIT[32] =
+    {
+        0x00000001,
+        0x00000002,
+        0x00000004,
+        0x00000008,
+        0x00000010,
+        0x00000020,
+        0x00000040,
+        0x00000080,
+        0x00000100,
+        0x00000200,
+        0x00000400,
+        0x00000800,
+        0x00001000,
+        0x00002000,
+        0x00004000,
+        0x00008000,
+        0x00010000,
+        0x00020000,
+        0x00040000,
+        0x00080000,
+        0x00100000,
+        0x00200000,
+        0x00400000,
+        0x00800000,
+        0x01000000,
+        0x02000000,
+        0x04000000,
+        0x08000000,
+        0x10000000,
+        0x20000000,
+        0x40000000,
+        0x80000000,
 };
 
-/* This function initialize the Segment LCD on FRDM-KL46Z board */
-void slcd_init(void)
+
+unsigned char LCD_CharPosition;
+
+void SLCD_Init(void)
 {
-	/* Enable SLCD and Port clocks */
-	SIM->SCGC5 |=
-			SIM_SCGC5_PORTB_MASK | SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTD_MASK | SIM_SCGC5_PORTE_MASK | SIM_SCGC5_SLCD_MASK;
+    SIM->SCGC5 |= SIM_SCGC5_SLCD_MASK | SIM_SCGC5_PORTB_MASK | SIM_SCGC5_PORTC_MASK | SIM_SCGC5_PORTD_MASK | SIM_SCGC5_PORTE_MASK;
 
-	LCD->GCR |= LCD_GCR_PADSAFE_MASK; /* disable LCD pins while configuring */
-	LCD->GCR &= ~LCD_GCR_LCDEN_MASK; /* disable driving LCD  */
+    // configure pins for LCD operation
+    PORTC->PCR[20] = 0x00000000; // VLL2
+    PORTC->PCR[21] = 0x00000000; // VLL1
+    PORTC->PCR[22] = 0x00000000; // VCAP2
+    PORTC->PCR[23] = 0x00000000; // VCAP1
 
+    MCG->C1 = MCG_C1_IRCLKEN_MASK | MCG_C1_IREFSTEN_MASK;// Enable IRCLK
+    
+    MCG->C2 &= ~MCG_C2_IRCS_MASK;// 0 32KHZ internal reference clock; 1= 4MHz irc
 
-	/* LCD control register */
-	LCD->GCR = LCD_GCR_CPSEL_MASK | /* use capacitor charge pump */
-				LCD_GCR_SOURCE_MASK | /* Use alternate clock source */
-				LCD_GCR_ALTSOURCE(0) | /* Use alternate clock option 0 */
-				LCD_GCR_ALTDIV(0) | /* alternate clock divider = 1 */
-				LCD_GCR_DUTY(3) | /* 1/4 duty cycle */
-				LCD_GCR_LADJ(3) | /* slowest clock source for capacitor charge pump */
-				//LCD_GCR_FFR_MASK | /* use fast frame rate */
-				LCD_GCR_LCDDOZE(0) | /* allow running in stop mode */
-				LCD_GCR_LCLK(4) | /* for getting frame freq = 32, assuming LCD clock = 32kHz */
-				LCD_GCR_RVEN_MASK | /* Enable regulated voltage and trim */
-				LCD_GCR_RVTRIM(8) |
-				LCD_GCR_VSUPPLY_MASK;
+    // vfnLCD_interrupt_init();
 
-	LCD->AR = 	0; /* Disable blink  */
+    LCD->GCR = 0x0;
+    LCD->AR = 0x0;
 
-	/* Enable LCD pins for FRDM-KL46 board */
-	LCD->PEN[0] = 	(1 << 7) | /* LCD_P7 = FP Digit 2 (D,E,G,F) */
-					(1 << 8) | /* LCD_P8  = FP Digit 2 (DP,C,B,A)*/
-					(1 << 10) | /* LCD_P10 = FP Digit 4 (D,E,G,F)*/
-					(1 << 11) | /* LCD_P11 = FP Digit 4 (COL,C,B,A) */
-					(1 << 17) | /* LCD_P17 = FP Digit 1 (DP,C,B,A) */
-					(1 << 18) | /* LCD_P18 = BP 4 */
-					(1 << 19); /* LCD_P19 = BP 3 */
+    /* LCD configurartion according to */
+    LCD->GCR = (LCD_GCR_RVEN_MASK * _LCDRVEN | LCD_GCR_RVTRIM(_LCDRVTRIM)                                                 // 0-15
+                | LCD_GCR_CPSEL_MASK * _LCDCPSEL | LCD_GCR_LADJ(_LCDLOADADJUST)                                           // 0-3*/
+                | LCD_GCR_VSUPPLY_MASK * _LCDSUPPLY                                                                       // 0-1*/
+                | !LCD_GCR_FDCIEN_MASK | LCD_GCR_ALTDIV(_LCDALTDIV)                                                       // 0-3
+                | !LCD_GCR_LCDDOZE_MASK | !LCD_GCR_LCDSTP_MASK | !LCD_GCR_LCDEN_MASK                                      // WILL BE ENABLE ON SUBSEQUENT STEP
+                | LCD_GCR_SOURCE_MASK * _LCDCLKSOURCE | LCD_GCR_ALTSOURCE_MASK * _LCDALRCLKSOURCE | LCD_GCR_LCLK(_LCDLCK) // 0-7
+                | LCD_GCR_DUTY(_LCDDUTY)                                                                                  // 0-7
+    );
 
-	LCD->PEN[1] = (1 << 5) | /* LCD_P37 = FP Digit 1 (D,E,G,F) */
-					(1 << 6) | /* LCD_P38  = FP Digist 3 (DP,C,B,A) */
-					(1 << 8) | /* LCD_P40 = BP 1 */
-					(1 << 20) | /* LCD_P52 = BP 2 */
-					(1 << 21); /* LCD_P53 = FP Digit 3 (D,E,G,F)*/
+    // Enable LCD pins and Configure BackPlanes
+    SLCD_EnablePins();
 
-	/* Configure backplane and frontplane pins for FRDM-KL46 board */
-	LCD->BPEN[0] = (1 << 18) | (1 << 19); /* LCD_P18 and LCD_P19 are back plane pins */
-	LCD->BPEN[1] = (1 << 8) | (1 << 20); /* LCD_P40 and LCD_P52 are backplane pins */
+    LCD->GCR |= LCD_GCR_LCDEN_MASK;
 
-	/* Initalize waveform registers to show a blank display */
-	LCD->WF[0] = 0; /* Pins 3 to 0 not used */
-	LCD->WF[1] = LCD_WF_WF7(0x0); /* LCD_P7 off */
-	LCD->WF[2] = LCD_WF_WF8(0x0) | /* LCD_P8 off */
-	LCD_WF_WF10(0x0) | /* LCD_P10 off */
-	LCD_WF_WF11(0x0); /* LCD_P11 off */
-	LCD->WF[3] = 0; /* Pins 12 to 15 not used */
-	LCD->WF[4] = LCD_WF_WF17(0x0) | /* LCD_P17 off */
-	LCD_WF_WF18(0x88) | /* Backplane pin LCD_P18(BP4) active during H and D phases */
-	LCD_WF_WF19(0x44); /* Backplane pin LCD_P19(BP3) active during G and C phases */
-	LCD->WF[5] = 0; /* Pins 20 to 23 not used */
-	LCD->WF[6] = 0; /* Pins 24 to 27 not used */
-	LCD->WF[7] = 0; /* Pins 28 to 31 not used */
-	LCD->WF[8] = 0; /* Pins 32 to 35 not used */
-	LCD->WF[9] = LCD_WF_WF37(0x0) | /* LCD_P37 off */
-	LCD_WF_WF38(0x0); /* LCD_P38 off */
-	LCD->WF[10] = LCD_WF_WF40(0x11); /* BP pin LCD_P40 drives A and E phases */
-	LCD->WF[11] = 0; /* pins 44 to 47 not used */
-	LCD->WF[12] = 0; /* pins 48 to 51 not used */
-	LCD->WF[13] = LCD_WF_WF52(0x22) | /* BP pin PCD_P52 drives B and F phases */
-	LCD_WF_WF53(0); /* LCD_P53 off */
-	LCD->WF[14] = 0; /* Pins 56 to 59 not used */
-	LCD->WF[15] = 0; /* Pins 60 to 63 not used */
-
-	/* Disable Pad safe bit and enable LCD driver */
-	LCD->GCR &= ~LCD_GCR_PADSAFE_MASK;
-	LCD->GCR |= LCD_GCR_LCDEN_MASK;
-
+    /* Configure LCD Auxiliar Register*/
+    LCD->AR = LCD_AR_BRATE(_LCDBLINKRATE); // all other flags set as zero
 }
 
-void slcd_set_digit(uint32_t digit, uint32_t val)
+void SLCD_EnablePins(void)
 {
-	if ((digit > 3) || (val > 0xF))
-		return;
+    unsigned char i;
+    unsigned long int *p_pen;
+    unsigned char pen_offset; // 0 or 1
+    unsigned char pen_bit;    // 0 to 31
 
-	switch (val) {
-		case 0x0:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_D | SEG_E | SEG_F;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A | SEG_B | SEG_C;
-			break;
+    LCD->PEN[0] = 0x0;
+    LCD->PEN[1] = 0x0;
+    LCD->BPEN[0] = 0x0;
+    LCD->BPEN[1] = 0x0;
 
-		case 0x1:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_NONE;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_B | SEG_C;
-			break;
+    p_pen = (unsigned long int *)&LCD->PEN[0];
 
-		case 0x2:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_D | SEG_G | SEG_E;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A | SEG_B;
-			break;
+    for (i = 0; i < _LCDUSEDPINS; i++)
+    {
+        pen_offset = WF_ORDERING_TABLE[i] / 32;
+        pen_bit = WF_ORDERING_TABLE[i] % 32;
+        p_pen[pen_offset] |= MASK_BIT[pen_bit];
 
-		case 0x3:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_D | SEG_G;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A | SEG_B | SEG_C;
-			break;
-
-		case 0x4:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_F | SEG_G;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_B | SEG_C;
-			break;
-
-		case 0x5:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_F | SEG_G | SEG_D;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A | SEG_C;
-			break;
-
-		case 0x6:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_D | SEG_E | SEG_F | SEG_G;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A | SEG_C;
-			break;
-
-		case 0x7:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_NONE;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A | SEG_B | SEG_C;
-			break;
-
-		case 0x8:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_D | SEG_E | SEG_F | SEG_G;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A | SEG_B | SEG_C;
-			break;
-
-		case 0x9:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_D | SEG_F | SEG_G;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A | SEG_B | SEG_C;
-			break;
-
-		case 0xA:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_E | SEG_F | SEG_G;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A | SEG_B | SEG_C;
-			break;
-
-		case 0xB:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_D | SEG_E | SEG_F | SEG_G;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_C;
-			break;
-
-		case 0xC:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_D | SEG_E | SEG_F;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A;
-			break;
-
-		case 0xD:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_D | SEG_E | SEG_G;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_B | SEG_C;
-			break;
-
-		case 0xE:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_D | SEG_E | SEG_F | SEG_G;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A;
-			break;
-
-		case 0xF:
-			LCD->WF8B[lcd_fp_pins[digit][0]] = SEG_E | SEG_F | SEG_G;
-			LCD->WF8B[lcd_fp_pins[digit][1]] = SEG_A;
-			break;
-
-		default:
-			break;
-
-	}
+        // Pin is a backplane
+        if (i >= _LCDFRONTPLANES)
+        {
+            // Enable  BPEN
+            p_pen[pen_offset + 2] |= MASK_BIT[pen_bit];
+            // fill with 0x01, 0x02, etc
+            LCD->WF8B[(unsigned char)WF_ORDERING_TABLE[i]] = MASK_BIT[i - _LCDFRONTPLANES];
+        }
+    }
 }
 
-void slcd_clear_digit(uint32_t digit)
+//Ascii to 8x6 dot matrix decodification table
+const char ASCII_TO_WF_CODIFICATION_TABLE[] =
+    {
+        (SEGD + SEGE + SEGF + !SEGG), (SEGC + SEGB + SEGA),       // Char = 0,   offset=0
+        (!SEGD + !SEGE + !SEGF + !SEGG), (SEGC + SEGB + !SEGA),   // Char = 1,   offset=4
+        (SEGD + SEGE + !SEGF + SEGG), (!SEGC + SEGB + SEGA),      // Char = 2,   offset=8
+        (SEGD + !SEGE + !SEGF + SEGG), (SEGC + SEGB + SEGA),      // Char = 3,   offset=12
+        (!SEGD + !SEGE + SEGF + SEGG), (SEGC + SEGB + !SEGA),     // Char = 4,   offset=16
+        (SEGD + !SEGE + SEGF + SEGG), (SEGC + !SEGB + SEGA),      // Char = 5,   offset=20
+        (SEGD + SEGE + SEGF + SEGG), (SEGC + !SEGB + SEGA),       // Char = 6,   offset=24
+        (!SEGD + !SEGE + !SEGF + !SEGG), (SEGC + SEGB + SEGA),    // Char = 7,   offset=28
+        (SEGD + SEGE + SEGF + SEGG), (SEGC + SEGB + SEGA),        // Char = 8,   offset=32
+        (SEGD + !SEGE + SEGF + SEGG), (SEGC + SEGB + SEGA),       // Char = 9,   offset=36
+        (!SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + !SEGA), // Char = :,   offset=40
+        (!SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + !SEGA), // Char = ;,   offset=44
+        (!SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + !SEGA), // Char = <,   offset=48
+        (SEGD + !SEGE + !SEGF + SEGG), (!SEGC + !SEGB + !SEGA),   // Char = =,   offset=52
+        (!SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + !SEGA), // Char = >,   offset=56
+        (!SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + SEGA),  // Char = ?,   offset=60
+        (SEGD + SEGE + SEGF + SEGG), (SEGC + SEGB + SEGA),        // Char = @,   offset=64
+        (!SEGD + SEGE + SEGF + SEGG), (SEGC + SEGB + SEGA),       // Char = A,   offset=68
+        (SEGD + SEGE + SEGF + SEGG), (SEGC + !SEGB + !SEGA),      // Char = B,   offset=72
+        (SEGD + SEGE + SEGF + !SEGG), (!SEGC + !SEGB + SEGA),     // Char = C,   offset=76
+        (SEGD + SEGE + !SEGF + SEGG), (SEGC + SEGB + SEGA),       // Char = D,   offset=80
+        (SEGD + SEGE + SEGF + SEGG), (!SEGC + !SEGB + SEGA),      // Char = E,   offset=84
+        (!SEGD + SEGE + SEGF + SEGG), (!SEGC + !SEGB + SEGA),     // Char = F,   offset=88
+        (SEGD + SEGE + SEGF + SEGG), (SEGC + !SEGB + SEGA),       // Char = G,   offset=92
+        (!SEGD + SEGE + SEGF + SEGG), (SEGC + SEGB + !SEGA),      // Char = H,   offset=96
+        (!SEGD + !SEGE + !SEGF + !SEGG), (SEGC + !SEGB + !SEGA),  // Char = I,   offset=100
+        (SEGD + SEGE + !SEGF + !SEGG), (SEGC + SEGB + !SEGA),     // Char = J,   offset=104
+        (!SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + !SEGA), // Char = K,   offset=108
+        (SEGD + SEGE + SEGF + !SEGG), (!SEGC + !SEGB + !SEGA),    // Char = L,   offset=112
+        (!SEGD + SEGE + SEGF + !SEGG), (SEGC + SEGB + !SEGA),     // Char = M,   offset=116
+        (!SEGD + SEGE + !SEGF + SEGG), (SEGC + !SEGB + !SEGA),    // Char = N,   offset=120
+        (SEGD + SEGE + !SEGF + SEGG), (SEGC + !SEGB + !SEGA),     // Char = O,   offset=124
+        (!SEGD + SEGE + SEGF + SEGG), (!SEGC + SEGB + SEGA),      // Char = P,   offset=128
+        (SEGD + !SEGE + SEGF + SEGG), (SEGC + SEGB + SEGA),       // Char = Q,   offset=132
+        (!SEGD + SEGE + SEGF + SEGG), (SEGC + SEGB + SEGA),       // Char = R,   offset=136
+        (SEGD + !SEGE + SEGF + SEGG), (SEGC + !SEGB + SEGA),      // Char = S,   offset=140
+        (SEGD + SEGE + SEGF + SEGG), (!SEGC + !SEGB + !SEGA),     // Char = T,   offset=144
+        (SEGD + SEGE + SEGF + !SEGG), (SEGC + SEGB + !SEGA),      // Char = U,   offset=148
+        (!SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + !SEGA), // Char = V,   offset=152
+        (!SEGD + SEGE + SEGF + !SEGG), (SEGC + SEGB + !SEGA),     // Char = W,   offset=156
+        (!SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + !SEGA), // Char = X,   offset=160
+        (!SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + !SEGA), // Char = Y,   offset=164
+        (SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + SEGA),   // Char = Z,   offset=168
+        (SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + SEGA),   // Char = [,   offset=172
+        (SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + SEGA),   // Char = \,   offset=176
+        (SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + SEGA),   // Char = ],   offset=180
+        (SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + SEGA),   // Char = ^,   offset=184
+        (SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + SEGA),   // Char = _,   offset=188
+        (SEGD + !SEGE + !SEGF + !SEGG), (!SEGC + !SEGB + SEGA),   // Char = `,   offset=192
+
+};
+
+void SLCD_WriteChar(unsigned char value)
 {
-	if(digit < 4) {
-		LCD->WF8B[lcd_fp_pins[digit][0]] = 0x0;
-		LCD->WF8B[lcd_fp_pins[digit][1]] &= ~(SEG_A|SEG_B|SEG_C);
-	}
+    unsigned char char_val;
+    unsigned char temp;
+    unsigned char *lbpLCDWF;
+    unsigned char counter;
+    unsigned short int arrayOffset;
+    unsigned char position;
+    lbpLCDWF = (unsigned char *)&LCD->WF[0];    //LCD_WF3TO0;
+
+    //only ascci character if value not writeable write as @
+    if (value >= 'a' && value <= 'z')
+        value -= 32; // UpperCase
+    if (value < ASCCI_TABLE_START || value > ASCCI_TABLE_END)
+        value = BLANK_CHARACTER; // default value as space
+
+    value -= ASCCI_TABLE_START; // Remove the offset to search in the ascci table
+
+    arrayOffset = (value * _CHAR_SIZE); // Compensate matrix offset
+
+    // ensure bLCD position is in valid limit
+    counter = 0; // number of writings to complete one char
+    while (counter < _CHAR_SIZE && LCD_CharPosition < _CHARNUM)
+    {
+        position = (LCD_CharPosition)*_LCDTYPE + counter;
+        temp = 0;
+        if (counter == 1)
+        {
+            temp = lbpLCDWF[WF_ORDERING_TABLE[position]] & 0x01; // bit 0 has the special symbol information
+        }
+        char_val = ASCII_TO_WF_CODIFICATION_TABLE[arrayOffset + counter];
+        lbpLCDWF[WF_ORDERING_TABLE[position]] = char_val | temp;
+        counter++;
+    }
+    LCD_CharPosition++;
 }
 
-void slcd_set_dp(uint32_t pos)
+void SLCD_WriteMsg(unsigned char *message)
 {
-	if (pos < 3) {
-		LCD->WF8B[lcd_fp_pins[pos][1]] |= SEG_DP;
-	}
-}
+    unsigned char size = 0;
+    LCD_CharPosition = 0; // Home display
+    while (size < _CHARNUM && *message)
+    {
+        SLCD_WriteChar(*message++);
+        size++;
+    }
 
-void slcd_clear_dp(uint32_t pos)
-{
-	if (pos < 3) {
-		LCD->WF8B[lcd_fp_pins[pos][1]] &= ~SEG_DP;
-	}
-}
-
-
-void slcd_set_colon(void)
-{
-	LCD->WF8B[lcd_fp_pins[3][1]] |= SEG_COL;
-}
-
-
-void slcd_clear_colon(void)
-{
-	LCD->WF8B[lcd_fp_pins[3][1]] &= ~SEG_COL;
-}
-
-void slcd_display_hex(uint16_t num)
-{
-	slcd_set_digit(0, (num & 0xF000) >> 12);
-	slcd_set_digit(1, (num & 0xF00) >> 8);
-	slcd_set_digit(2, (num & 0xF0) >> 4);
-	slcd_set_digit(3, num & 0xF);
-}
-
-void slcd_display_decimal(uint32_t num)
-{
-	uint32_t digit;
-	bool lead_zero = false;
-
-	digit = num/1000;
-	if(!digit) {
-		lead_zero = true;
-		slcd_clear_digit(0);
-	}
-	else {
-		slcd_set_digit(0, digit);
-	}
-
-	num -= digit*1000;
-	digit = num/100;
-	if(!digit && (true == lead_zero)) {
-		slcd_clear_digit(1);
-	}
-	else {
-		slcd_set_digit(1, digit);
-		lead_zero = false;
-	}
-
-	num -= digit*100;
-	digit = num/10;
-	if(!digit && (true == lead_zero)) {
-		slcd_clear_digit(2);
-	}
-	else {
-		slcd_set_digit(2, digit);
-		lead_zero = false;
-	}
-
-	num -= digit*10;
-	digit = num;
-	slcd_set_digit(3, digit);
-}
-
-void slcd_display_time(uint32_t hour, uint32_t min)
-{
-	if((hour > 23) || (min > 59)) {
-		return;
-	}
-	slcd_set_digit(0, hour/10);
-	slcd_set_digit(1, hour%10);
-	slcd_set_colon();
-	slcd_set_digit(2, min/10);
-	slcd_set_digit(3, min%10);
+    if (size < _CHARNUM)
+    {
+        while (size++ < _CHARNUM)
+            SLCD_WriteChar(BLANK_CHARACTER); // complete data with blanks
+    }
 }

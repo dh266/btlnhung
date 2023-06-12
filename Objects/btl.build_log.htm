@@ -5,11 +5,11 @@
 <h2>Tool Versions:</h2>
 IDE-Version: µVision V5.26.2.0
 Copyright (C) 2018 ARM Ltd and ARM Germany GmbH. All rights reserved.
-License Information: hoang truong, university, LIC=----
+License Information: hiep doan, uet, LIC=----
  
 Tool Versions:
 Toolchain:       MDK-Lite  Version: 5.26.2.0
-Toolchain Path:  D:\keil\ARM\ARMCC\Bin
+Toolchain Path:  D:\Keil_v5\ARM\ARMCC\Bin
 C Compiler:      Armcc.exe V5.06 update 6 (build 750)
 Assembler:       Armasm.exe V5.06 update 6 (build 750)
 Linker/Locator:  ArmLink.exe V5.06 update 6 (build 750)
@@ -21,21 +21,75 @@ Target DLL:      PEMicro\Pemicro_ArmCortexInterface.dll V1.11
 Dialog DLL:      TARMCM1.DLL V1.14.0.0
  
 <h2>Project:</h2>
-C:\Users\Admin\Documents\btl\btl.uvprojx
-Project File Date:  06/11/2023
+C:\Users\daonh\Desktop\btl\btl_testcom - Copy\btl.uvprojx
+Project File Date:  06/13/2023
 
 <h2>Output:</h2>
-*** Using Compiler 'V5.06 update 6 (build 750)', folder: 'D:\keil\ARM\ARMCC\Bin'
-Build target 'Target 1'
-".\Objects\btl.axf" - 0 Error(s), 0 Warning(s).
+*** Using Compiler 'V5.06 update 6 (build 750)', folder: 'D:\Keil_v5\ARM\ARMCC\Bin'
+Rebuild target 'Target 1'
+assembling startup_MKL46Z4.s...
+compiling utility.c...
+timer.h(13): warning:  #1295-D: Deprecated declaration now - give arg types
+  ticktime_t now();
+timer.h(15): warning:  #1295-D: Deprecated declaration reset_timer - give arg types
+  void reset_timer();
+timer.h(17): warning:  #1295-D: Deprecated declaration get_timer - give arg types
+  ticktime_t get_timer();
+timer.h(19): warning:  #1295-D: Deprecated declaration getTicks - give arg types
+  ticktime_t getTicks();
+utility.c: 4 warnings, 0 errors
+compiling mma8451.c...
+timer.h(13): warning:  #1295-D: Deprecated declaration now - give arg types
+  ticktime_t now();
+timer.h(15): warning:  #1295-D: Deprecated declaration reset_timer - give arg types
+  void reset_timer();
+timer.h(17): warning:  #1295-D: Deprecated declaration get_timer - give arg types
+  ticktime_t get_timer();
+timer.h(19): warning:  #1295-D: Deprecated declaration getTicks - give arg types
+  ticktime_t getTicks();
+mma8451.c: 4 warnings, 0 errors
+compiling timer.c...
+timer.h(13): warning:  #1295-D: Deprecated declaration now - give arg types
+  ticktime_t now();
+timer.h(15): warning:  #1295-D: Deprecated declaration reset_timer - give arg types
+  void reset_timer();
+timer.h(17): warning:  #1295-D: Deprecated declaration get_timer - give arg types
+  ticktime_t get_timer();
+timer.h(19): warning:  #1295-D: Deprecated declaration getTicks - give arg types
+  ticktime_t getTicks();
+timer.c: 4 warnings, 0 errors
+compiling slcd.c...
+compiling i2c.c...
+compiling main.c...
+timer.h(13): warning:  #1295-D: Deprecated declaration now - give arg types
+  ticktime_t now();
+timer.h(15): warning:  #1295-D: Deprecated declaration reset_timer - give arg types
+  void reset_timer();
+timer.h(17): warning:  #1295-D: Deprecated declaration get_timer - give arg types
+  ticktime_t get_timer();
+timer.h(19): warning:  #1295-D: Deprecated declaration getTicks - give arg types
+  ticktime_t getTicks();
+main.c(44): warning:  #188-D: enumerated type mixed with another type
+  		NVIC_ClearPendingIRQ(31);
+main.c(45): warning:  #188-D: enumerated type mixed with another type
+  		NVIC_EnableIRQ(31);
+main.c(109): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "unsigned char *"
+  		SLCD_WriteMsg(target1);
+main.c(111): warning:  #1-D: last line of file ends without a newline
+  }
+main.c: 8 warnings, 0 errors
+compiling system_MKL46Z4.c...
+linking...
+Program Size: Code=4428 RO-data=480 RW-data=48 ZI-data=3144  
+".\Objects\btl.axf" - 0 Error(s), 20 Warning(s).
 
 <h2>Software Packages used:</h2>
 
 Package Vendor: ARM
-                http://www.keil.com/pack/ARM.CMSIS.5.4.0.pack
-                ARM.CMSIS.5.4.0
-                CMSIS (Cortex Microcontroller Software Interface Standard)
-   * Component: CORE Version: 5.1.2
+                http://www.keil.com/pack/ARM.CMSIS.5.9.0.pack
+                ARM.CMSIS.5.9.0
+                CMSIS (Common Microcontroller Software Interface Standard)
+   * Component: CORE Version: 5.6.0
 
 Package Vendor: NXP
                 http://mcuxpresso.nxp.com/cmsis_pack/repo/NXP.MKL46Z4_DFP.10.0.3.pack
@@ -46,20 +100,20 @@ Package Vendor: NXP
 <h2>Collection of Component include folders:</h2>
   .\RTE\Device\MKL46Z256VLL4
   .\RTE\_Target_1
-  D:\keil\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include
+  D:\Keil_v5\ARM\PACK\ARM\CMSIS\5.9.0\CMSIS\Core\Include
 
 <h2>Collection of Component Files used:</h2>
 
-   * Component: ARM::CMSIS:CORE:5.1.2
+   * Component: ARM::CMSIS:CORE:5.6.0
 
    * Component: NXP::Device:Startup:1.0.0
       Source file:   system_MKL46Z4.c
-      Include file:  MKL46Z4_features.h
-      Source file:   arm\startup_MKL46Z4.s
       Include file:  MKL46Z4.h
+      Include file:  MKL46Z4_features.h
       Include file:  fsl_device_registers.h
       Include file:  system_MKL46Z4.h
-Build Time Elapsed:  00:00:00
+      Source file:   arm\startup_MKL46Z4.s
+Build Time Elapsed:  00:00:01
 </pre>
 </body>
 </html>

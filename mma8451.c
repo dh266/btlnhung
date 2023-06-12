@@ -4,12 +4,13 @@
 int16_t acc_x=0, acc_y=0, acc_z=0;
 
 int init_mma(void){
-	//Set active mode, 14 bit samples and 800hz ODR
+	
 	I2C0_write_byte(MMA_ADDR, REG_CTRL1, 0x01);
 	return 1;
 }
 
-void read_full_xyz(void){
+void read_full_xyz(void)
+{
 	int i;
 	uint8_t data[6];
 	int16_t temp[3];
@@ -60,17 +61,6 @@ void calibrate(int16_t *xval, int16_t *yval, int16_t *zval, int *xavg, int *yavg
 	}
 	delay(100);
 	*xavg = sum/100;
-#ifdef DEBUG
-	printf("avg X: %d\r\n", *xavg);
-#endif
-
 	*yavg = sum1/100;
-#ifdef DEBUG
-	printf("avg Y: %d\r\n", *yavg);
-#endif
-
 	*zavg = sum2/100;
-#ifdef DEBUG
-	printf("avg Z: %d\r\n", *zavg);
-#endif
 }
