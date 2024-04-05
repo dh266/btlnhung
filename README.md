@@ -1,14 +1,11 @@
 # btl
 
-
-
 REPORT
 
 
-THIẾT KẾ VÀ THỰC HIỆN HỆ THỐNG ĐẾM SỐ BƯỚC CHÂN
+THIẾT KẾ VÀ THỰC HIỆN HỆ THỐNG ĐẾM SỐ BƯỚC CHÂN FRDM-KL46Z
 Design and Implementation of a Pedometer 
-Ver 0.2
-19/04/2023
+
 
 Tóm tắt (Abstract - from 5 to 10 lines)
 Dự án này thiết kế và thực thi một bộ đếm số bước chân, sử dụng cảm biến gia tốc và các ngoại vi có sẵn trên bo mạch FRDM-KL46z. Hệ thống sẽ đếm số bước chân khi người sử dụng di chuyển và hiển thị kết quả lên màn hình LCD. Ngoài ra, hệ thống có các chức năng như chuyển đổi trạng thái hoạt động và dừng bằng nút bấm, reset kết quả đếm và hiển thị trạng thái qua LED. Một timer được sử dụng để điều chỉnh tần số nhấp nháy của LED xanh. Dự án yêu cầu cấu hình phù hợp của các thành phần và giao tiếp giữa chúng để hoạt động chính xác. 
@@ -21,11 +18,6 @@ Từ khóa (Keywords)
 Hướng dẫn (Guide)
 
 Document History
-Version	Time	Revised by	Description
-V0.1	15/4/2023	Nguyễn Kiêm Hùng	Original Version
-V0.2	1904/2023	Nguyễn Kiêm Hùng	Modified the format of report
-			
- 
 
 Mục lục (Table of Contents)
 
